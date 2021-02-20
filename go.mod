@@ -1,0 +1,1 @@
+module "github.com/Scarlet-Fairy/cobold"
