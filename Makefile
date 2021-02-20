@@ -1,11 +1,11 @@
 GOCMD=go
 GOTEST=$(GOCMD) test
-GOVET=$(GOCMD) vet
 BINARY_NAME=cobold
 VERSION?=0.0.0
 SERVICE_PORT?=3000
 DOCKER_REGISTRY?= #if set it should finished by /
 EXPORT_RESULT?=false # for CI please set EXPORT_RESULT to true
+BIN_FOLDER?=bin/
 
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
@@ -40,7 +40,7 @@ vendor:
 
 build:
 	mkdir -p bin
-	GO111MODULE=on $(GOCMD) build -mod vendor -o bin/$(BINARY_NAME) .
+	GO111MODULE=on $(GOCMD) build -mod vendor -o $(BIN_FOLDER)$(BINARY_NAME) .
 
 docker-build:
 	docker build --rm --tag $(BINARY_NAME) .
@@ -62,7 +62,7 @@ help:
 	@echo '  ${YELLOW}make${RESET} ${GREEN}<target>${RESET}'
 	@echo ''
 	@echo 'Targets:'
-	@echo "  ${YELLOW}build           ${RESET} ${GREEN}Build your project and put the output binary in out/bin/$(BINARY_NAME)${RESET}"
+	@echo "  ${YELLOW}build           ${RESET} ${GREEN}Build your project and put the output binary in $(BIN_FOLDER)(BINARY_NAME)${RESET}"
 	@echo "  ${YELLOW}clean           ${RESET} ${GREEN}Remove build related file${RESET}"
 	@echo "  ${YELLOW}docker-build    ${RESET} ${GREEN}Use the dockerfile to build the container (name: $(BINARY_NAME))${RESET}"
 	@echo "  ${YELLOW}docker-release  ${RESET} ${GREEN}Release the container \"$(DOCKER_REGISTRY)$(BINARY_NAME)\" with tag latest and $(VERSION) ${RESET}"
