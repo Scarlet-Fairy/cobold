@@ -6,6 +6,7 @@ SERVICE_PORT?=3000
 DOCKER_REGISTRY?= #if set it should finished by /
 EXPORT_RESULT?=false # for CI please set EXPORT_RESULT to true
 BIN_FOLDER?=bin/
+MAIN_PATH?=cmd/cobold/main.go
 
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
@@ -25,12 +26,21 @@ ifeq ($(shell test -e ./Dockerfile && echo -n yes),yes)
 	$(eval CONFIG_OPTION = $(shell [ -e $(shell pwd)/.hadolint.yaml ] && echo "-v $(shell pwd)/.hadolint.yaml:/root/.config/hadolint.yaml" || echo "" ))
 	$(eval OUTPUT_OPTIONS = $(shell [ "${EXPORT_RESULT}" == "true" ] && echo "--format checkstyle" || echo "" ))
 	$(eval OUTPUT_FILE = $(shell [ "${EXPORT_RESULT}" == "true" ] && echo "| tee /dev/tty > checkstyle-report.xml" || echo "" ))
-	docker run --rm -i $(CONFIG_OPTION) hadolint/hadolint hadolint $(OUTPUT_OPTIONS) - < ./Dockerfile $(OUTPUT_FILE)
+	docker run --rm \
+		-i $(CONFIG_OPTION) \
+		hadolint/hadolint \
+		hadolint \
+		$(OUTPUT_OPTIONS) - < ./Dockerfile $(OUTPUT_FILE)
 endif
 
 lint-go:
 	$(eval OUTPUT_OPTIONS = $(shell [ "${EXPORT_RESULT}" == "true" ] && echo "--out-format checkstyle ./... | tee /dev/tty > checkstyle-report.xml" || echo "" ))
-	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:latest-alpine golangci-lint run --deadline=65s $(OUTPUT_OPTIONS)
+	docker run --rm \
+		-v $(shell pwd):/app \
+		-w /app \
+		golangci/golangci-lint:latest-alpine \
+		golangci-lint run \
+		--deadline=65s $(OUTPUT_OPTIONS)
 
 clean:
 	rm -fr ./bin
@@ -52,11 +62,13 @@ ifeq ($(EXPORT_RESULT), true)
 endif
 
 vendor:
-	$(GOCMD) mod vendor
+	@echo 'Creating vendor folder'
+	@$(GOCMD) mod vendor
 
-build:
-	mkdir -p bin
-	GO111MODULE=on $(GOCMD) build -mod vendor -o $(BIN_FOLDER)$(BINARY_NAME) .
+build: vendor
+	@echo 'Building ${BINARY_NAME}'
+	@mkdir -p bin
+	@GO111MODULE=on $(GOCMD) build -mod vendor -o $(BIN_FOLDER)$(BINARY_NAME) $(MAIN_PATH)
 
 docker-build:
 	docker build --rm --tag $(BINARY_NAME) .
@@ -70,7 +82,12 @@ docker-release:
 
 watch:
 	$(eval PACKAGE_NAME=$(shell head -n 1 go.mod | cut -d ' ' -f2))
-	docker run -it --rm -w /go/src/$(PACKAGE_NAME) -v $(shell pwd):/go/src/$(PACKAGE_NAME) -p $(SERVICE_PORT):$(SERVICE_PORT) cosmtrek/air
+	docker run -it --rm \
+		-w /go/src/$(PACKAGE_NAME) \
+		-v $(shell pwd):/go/src/$(PACKAGE_NAME) \
+		-p $(SERVICE_PORT):$(SERVICE_PORT) \
+		cosmtrek/air \
+		-c /go/src/$(PACKAGE_NAME)/.air.toml
 
 help:
 	@echo ''
