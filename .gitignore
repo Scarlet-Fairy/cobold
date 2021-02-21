@@ -16,4 +16,5 @@
 /vendor/
 /Godeps/
 /bin/
+/tmp/
 /.idea/

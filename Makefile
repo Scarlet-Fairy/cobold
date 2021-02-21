@@ -13,7 +13,7 @@ WHITE  := $(shell tput -Txterm setaf 7)
 RESET  := $(shell tput -Txterm sgr0)
 
 
-.PHONY: all build vendor
+.PHONY: all test build vendor
 
 all: help
 
@@ -34,6 +34,22 @@ lint-go:
 
 clean:
 	rm -fr ./bin
+
+test:
+ifeq ($(EXPORT_RESULT), true)
+	GO111MODULE=off go get -u github.com/jstemmer/go-junit-report
+	$(eval OUTPUT_OPTIONS = | tee /dev/tty | go-junit-report -set-exit-code > junit-report.xml)
+endif
+	$(GOTEST) -v -race ./... $(OUTPUT_OPTIONS)
+
+coverage:
+	$(GOTEST) -cover -covermode=count -coverprofile=profile.cov ./...
+	$(GOCMD) tool cover -func profile.cov
+ifeq ($(EXPORT_RESULT), true)
+	GO111MODULE=off go get -u github.com/AlekSi/gocov-xml
+	GO111MODULE=off go get -u github.com/axw/gocov/gocov
+	gocov convert profile.cov | gocov-xml > coverage.xml
+endif
 
 vendor:
 	$(GOCMD) mod vendor
