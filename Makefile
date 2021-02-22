@@ -14,7 +14,7 @@ WHITE  := $(shell tput -Txterm setaf 7)
 RESET  := $(shell tput -Txterm sgr0)
 
 
-.PHONY: all test build vendor
+.PHONY: all test build run vendor
 
 all: help
 
@@ -71,7 +71,7 @@ build: vendor
 	@GO111MODULE=on $(GOCMD) build -mod vendor -o $(BIN_FOLDER)$(BINARY_NAME) $(MAIN_PATH)
 
 docker-build:
-	docker build --rm --tag $(BINARY_NAME) .
+	DOCKER_BUILDKIT=1 docker build --rm --tag $(BINARY_NAME) .
 
 docker-release:
 	docker tag $(BINARY_NAME) $(DOCKER_REGISTRY)$(BINARY_NAME):latest
@@ -79,6 +79,11 @@ docker-release:
 	# Push the docker images
 	docker push $(DOCKER_REGISTRY)$(BINARY_NAME):latest
 	docker push $(DOCKER_REGISTRY)$(BINARY_NAME):$(VERSION)
+
+run: docker-run
+
+docker-run: docker-build
+	docker run --network host $(BINARY_NAME)
 
 watch:
 	$(eval PACKAGE_NAME=$(shell head -n 1 go.mod | cut -d ' ' -f2))
@@ -89,6 +94,18 @@ watch:
 		cosmtrek/air \
 		-c /go/src/$(PACKAGE_NAME)/.air.toml
 
+jaeger:
+	docker run --name jaeger --rm \
+      -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 \
+      -p 5775:5775/udp \
+      -p 6831:6831/udp \
+      -p 6832:6832/udp \
+      -p 5778:5778 \
+      -p 16686:16686 \
+      -p 14268:14268 \
+      -p 14250:14250 \
+      -p 9411:9411 \
+      jaegertracing/all-in-one:1.21
 help:
 	@echo ''
 	@echo 'Usage:'
