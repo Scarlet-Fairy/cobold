@@ -7,14 +7,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-type git struct {
+type gitClone struct {
 }
 
 func new() clone.Clone {
-	return &git{}
+	return &gitClone{}
 }
 
-func (g *git) Clone(_ context.Context, url string, path string) error {
+func (g *gitClone) Clone(_ context.Context, url string, path string) error {
 	_, err := gitUtils.PlainClone(path, false, &gitUtils.CloneOptions{
 		URL:               url,
 		RecurseSubmodules: gitUtils.DefaultSubmoduleRecursionDepth,

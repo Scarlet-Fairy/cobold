@@ -94,8 +94,10 @@ watch:
 		cosmtrek/air \
 		-c /go/src/$(PACKAGE_NAME)/.air.toml
 
-jaeger:
-	docker run --name jaeger --rm \
+run-jaeger:
+	docker run \
+	  --name jaeger \
+	  --rm \
       -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 \
       -p 5775:5775/udp \
       -p 6831:6831/udp \
@@ -106,6 +108,14 @@ jaeger:
       -p 14250:14250 \
       -p 9411:9411 \
       jaegertracing/all-in-one:1.21
+
+run-registry:
+	docker run \
+	-p 5000:5000 \
+	--name registry \
+	--rm \
+	registry:2
+
 help:
 	@echo ''
 	@echo 'Usage:'
@@ -116,10 +126,13 @@ help:
 	@echo "  ${YELLOW}clean           ${RESET} ${GREEN}Remove build related file${RESET}"
 	@echo "  ${YELLOW}docker-build    ${RESET} ${GREEN}Use the dockerfile to build the container (name: $(BINARY_NAME))${RESET}"
 	@echo "  ${YELLOW}docker-release  ${RESET} ${GREEN}Release the container \"$(DOCKER_REGISTRY)$(BINARY_NAME)\" with tag latest and $(VERSION) ${RESET}"
-	@echo "  ${YELLOW}help            ${RESET} ${GREEN}Show this help message${RESET}"
+	@echo "  ${YELLOW}docker-run      ${RESET} ${GREEN}Build and run the container ${RESET}"
 	@echo "  ${YELLOW}lint            ${RESET} ${GREEN}Run all available linters${RESET}"
 	@echo "  ${YELLOW}lint-dockerfile ${RESET} ${GREEN}Lint your Dockerfile${RESET}"
 	@echo "  ${YELLOW}lint-go         ${RESET} ${GREEN}Use golintci-lint on your project${RESET}"
 	@echo "  ${YELLOW}test            ${RESET} ${GREEN}Run the tests of the project${RESET}"
 	@echo "  ${YELLOW}vendor          ${RESET} ${GREEN}Copy of all packages needed to support builds and tests in the vendor directory${RESET}"
 	@echo "  ${YELLOW}watch           ${RESET} ${GREEN}Run the code with cosmtrek/air to have automatic reload on changes${RESET}"
+	@echo "  ${YELLOW}run-jaeger      ${RESET} ${GREEN}Run Jaeger to store traces${RESET}"
+	@echo "  ${YELLOW}run-registry	  ${RESET} ${GREEN}Run a docker container registry on port 5000${RESET}"
+
