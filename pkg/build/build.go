@@ -1,12 +1,15 @@
 package build
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 type Build interface {
-	Build(options BuildOptions) (io.Reader, error)
+	Build(ctx context.Context, options Options) (io.Reader, error)
 }
 
-type BuildOptions struct {
+type Options struct {
 	Directory string
 	Tag       string
 }

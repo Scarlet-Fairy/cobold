@@ -2,8 +2,8 @@ package docker
 
 import (
 	"bytes"
+	"context"
 	"github.com/Scarlet-Fairy/cobold/pkg/build"
-	"github.com/Scarlet-Fairy/cobold/pkg/log"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/pkg/errors"
 	"io"
@@ -13,18 +13,18 @@ type dockerBuild struct {
 	client *docker.Client
 }
 
-func new(endpoint string) build.Build {
+func newBuild(endpoint string) (build.Build, error) {
 	client, err := docker.NewClient(endpoint)
 	if err != nil {
-		log.Logger.WithField("endpoint", endpoint).WithField("error", err).Fatalf("Could not create client")
+		return nil, errors.Wrap(err, "could not create docker builder")
 	}
 
 	return &dockerBuild{
 		client,
-	}
+	}, nil
 }
 
-func (d dockerBuild) Build(options build.BuildOptions) (io.Reader, error) {
+func (d dockerBuild) Build(_ context.Context, options build.Options) (io.Reader, error) {
 	outputStream := bytes.NewBuffer(nil)
 
 	if err := d.client.BuildImage(docker.BuildImageOptions{

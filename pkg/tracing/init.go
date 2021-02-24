@@ -1,7 +1,6 @@
 package tracing
 
 import (
-	"github.com/Scarlet-Fairy/cobold/pkg/log"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/uber/jaeger-client-go"
@@ -9,7 +8,7 @@ import (
 	"io"
 )
 
-func Init(service string) (opentracing.Tracer, io.Closer) {
+func Init(service string) (opentracing.Tracer, io.Closer, error) {
 	cfg := config.Configuration{
 		ServiceName: service,
 		Sampler: &config.SamplerConfig{
@@ -23,8 +22,8 @@ func Init(service string) (opentracing.Tracer, io.Closer) {
 
 	tracer, closer, err := cfg.NewTracer(config.Logger(jaeger.NullLogger))
 	if err != nil {
-		log.Logger.Fatal(errors.Wrap(err, "tracing.Init"))
+		return nil, nil, errors.Wrap(err, "initializing tracing")
 	}
 
-	return tracer, closer
+	return tracer, closer, nil
 }

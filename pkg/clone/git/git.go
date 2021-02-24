@@ -14,13 +14,13 @@ func new() clone.Clone {
 	return &gitClone{}
 }
 
-func (g *gitClone) Clone(_ context.Context, url string, path string) error {
-	_, err := gitUtils.PlainClone(path, false, &gitUtils.CloneOptions{
-		URL:               url,
+func (g *gitClone) Clone(_ context.Context, options clone.Options) error {
+	_, err := gitUtils.PlainClone(options.Path, false, &gitUtils.CloneOptions{
+		URL:               options.Url,
 		RecurseSubmodules: gitUtils.DefaultSubmoduleRecursionDepth,
 	})
 	if err != nil {
-		return errors.Wrap(err, "git.Clone")
+		return errors.Wrap(err, "could not clone repo")
 	}
 
 	return nil
