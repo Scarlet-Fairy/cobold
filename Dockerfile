@@ -1,5 +1,3 @@
-# syntax = docker/dockerfile:1-experimental
-
 FROM golang:1.15.8-alpine AS base
 
 MAINTAINER Michele Della Mea <michele.dellamea.arcanediver@gmail.com>
@@ -19,22 +17,24 @@ RUN adduser \
 
 WORKDIR /src
 
-ENV CGO_ENABLED=0 \
-    GO111MODULE=on
+# ENV CGO_ENABLED=0 \
+#     GO111MODULE=on
 
-COPY go.* ./
-RUN go mod download
+# COPY go.* ./
+# RUN go mod download
 COPY . .
 
 # ---------------------- #
 
 FROM base AS build
 
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+ENV TARGETOS=linux
+ENV TARGETARCH=amd64
 
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /out/cobold ./cmd/cobold/main.go
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -mod vendor \
+    -o /out/cobold \
+    ./cmd/cobold/main.go
 
 # ---------------------- #
 
@@ -44,11 +44,11 @@ RUN apk update
 RUN apk add ca-certificates git
 RUN rm -rf /var/cache/apk/*
 
-COPY --from=base /etc/passwd /etc/passwd
-COPY --from=base /etc/group /etc/group
+# COPY --from=base /etc/passwd /etc/passwd
+# COPY --from=base /etc/group /etc/group
 
 COPY --from=build /out/cobold .
 
-USER appuser:appuser
+# USER appuser:appuser
 
 ENTRYPOINT ["/cobold"]

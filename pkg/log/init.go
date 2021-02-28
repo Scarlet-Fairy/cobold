@@ -5,10 +5,10 @@ import (
 	"os"
 )
 
-func InitLogger() log.Logger {
+func InitLogger(jobID string) log.Logger {
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller, "jobID", jobID)
 
 	return logger
 }

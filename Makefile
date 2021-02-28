@@ -68,10 +68,10 @@ vendor:
 build: vendor
 	@echo 'Building ${BINARY_NAME}'
 	@mkdir -p bin
-	@GO111MODULE=on $(GOCMD) build -mod vendor -o $(BIN_FOLDER)$(BINARY_NAME) $(MAIN_PATH)
+	@$(GOCMD) build -mod vendor -o $(BIN_FOLDER)$(BINARY_NAME) $(MAIN_PATH)
 
-docker-build:
-	DOCKER_BUILDKIT=1 docker build --rm --tag $(BINARY_NAME) .
+docker-build: vendor
+	docker build --rm --tag $(BINARY_NAME) .
 
 docker-release:
 	docker tag $(BINARY_NAME) $(DOCKER_REGISTRY)$(BINARY_NAME):latest
@@ -83,7 +83,7 @@ docker-release:
 run: docker-run
 
 docker-run: docker-build
-	docker run --network host $(BINARY_NAME)
+	docker run --privileged --network host $(BINARY_NAME)
 
 watch:
 	$(eval PACKAGE_NAME=$(shell head -n 1 go.mod | cut -d ' ' -f2))

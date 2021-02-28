@@ -25,13 +25,21 @@ func newBuild(endpoint string) (build.Build, error) {
 }
 
 func (d dockerBuild) Build(_ context.Context, options build.Options) (io.Reader, error) {
+	inputStream, err := createTarball(options.Directory)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not build image")
+	}
+
 	outputStream := bytes.NewBuffer(nil)
 
-	if err := d.client.BuildImage(docker.BuildImageOptions{
-		ContextDir:   options.Directory,
+	buildOptions := docker.BuildImageOptions{
+		Dockerfile:   "Dockerfile",
 		Name:         options.Tag,
+		InputStream:  inputStream,
 		OutputStream: outputStream,
-	}); err != nil {
+	}
+
+	if err := d.client.BuildImage(buildOptions); err != nil {
 		return nil, errors.Wrap(err, "could not build image")
 	}
 

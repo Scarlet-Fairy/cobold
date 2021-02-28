@@ -49,10 +49,10 @@ func NewLogDecorator(jobID string, logger log.Logger, next Build) Build {
 }
 
 func (l logDecorator) Build(ctx context.Context, options Options) (reader io.Reader, err error) {
-	l.logger.Log("jobID", l.jobID, "msg", "Start build")
+	l.logger.Log("msg", "Start build")
 	defer func(begin time.Time) {
 		if err == nil {
-			l.logger.Log("jobID", l.jobID, "took", time.Since(begin), "msg", "End build")
+			l.logger.Log("took", time.Since(begin), "msg", "End build")
 		}
 	}(time.Now())
 

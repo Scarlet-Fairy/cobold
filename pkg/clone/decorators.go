@@ -48,10 +48,10 @@ func NewLogDecorator(jobID string, logger log.Logger, next Clone) Clone {
 }
 
 func (l logDecorator) Clone(ctx context.Context, options Options) (err error) {
-	l.logger.Log("jobID", l.jobID, "msg", "Start clone")
+	l.logger.Log("msg", "Start clone")
 	defer func(begin time.Time) {
 		if err == nil {
-			l.logger.Log("jobID", l.jobID, "took", time.Since(begin), "msg", "End Clone")
+			l.logger.Log("took", time.Since(begin), "msg", "End Clone")
 		}
 	}(time.Now())
 

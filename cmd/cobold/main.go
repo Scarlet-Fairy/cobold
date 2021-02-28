@@ -12,14 +12,13 @@ import (
 	"github.com/Scarlet-Fairy/cobold/pkg/tracing"
 	"github.com/go-kit/kit/log/level"
 	"github.com/opentracing/opentracing-go"
-	"github.com/pkg/errors"
+	"github.com/rs/xid"
 	"io/ioutil"
 	"os"
-	"time"
 )
 
 var (
-	buildId        = flag.String("build-id", "", "build ID that identify the actual job")
+	jobID          = flag.String("build-id", xid.New().String(), "build ID that identify the actual job")
 	gitRepository  = flag.String("git-repo", "https://github.com/buildkite/nodejs-docker-example", "repository to clone")
 	dockerEndpoint = flag.String("docker-endpoint", "localhost:2375", "docker daemon endpoint")
 	dockerRegistry = flag.String("docker-registry", "localhost:5000", "docker registry to push image")
@@ -33,7 +32,7 @@ var ctx = context.Background()
 func main() {
 	flag.Parse()
 
-	logger := log.InitLogger()
+	logger := log.InitLogger(*jobID)
 
 	tracer, closer, err := tracing.Init("cobold")
 	if err != nil {
@@ -46,7 +45,7 @@ func main() {
 	span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, tracer, "cobold")
 	defer span.Finish()
 
-	tmpDir, err := ioutil.TempDir("", "clone")
+	tmpDir, err := ioutil.TempDir("", "clone-")
 	if err != nil {
 		level.Error(logger).Log("msg", err.Error())
 		os.Exit(1)
@@ -55,16 +54,16 @@ func main() {
 
 	level.Debug(logger).Log("dir", tmpDir)
 
-	cloneInstance := git.MakeClone(*buildId, logger, tracer)
+	cloneInstance := git.MakeClone(*jobID, logger, tracer)
 	cloneOptions := clone.Options{
 		Url:  *gitRepository,
-		Path: tmpDir,
+		Path: tmpDir + "/",
 	}
 
-	buildInstance := docker.MakeBuild(*buildId, *dockerEndpoint, logger, tracer)
+	buildInstance := docker.MakeBuild(*jobID, *dockerEndpoint, logger, tracer)
 	buildOptions := build.Options{
-		Tag:       fmt.Sprintf("image_%s", *buildId),
-		Directory: "/tmp",
+		Tag:       fmt.Sprintf("cobold/%s", *jobID),
+		Directory: tmpDir,
 	}
 
 	if err := cloneInstance.Clone(ctx, cloneOptions); err != nil {
@@ -75,18 +74,8 @@ func main() {
 	buildOutputStream, err := buildInstance.Build(ctx, buildOptions)
 	if err != nil {
 		level.Error(logger).Log("msg", err.Error())
-		for {
-			time.Sleep(time.Minute)
-		}
 		os.Exit(1)
 	}
 
-	outputBytes, err := ioutil.ReadAll(buildOutputStream)
-	if err != nil {
-		level.Error(logger).Log("msg", errors.Wrap(err, "Reading output stream"))
-		os.Exit(1)
-	}
-
-	level.Debug(logger).Log("msg", string(outputBytes))
-
+	logger.Log("stream", buildOutputStream)
 }
