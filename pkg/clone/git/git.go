@@ -10,7 +10,7 @@ import (
 type gitClone struct {
 }
 
-func new() clone.Clone {
+func newClone() clone.Clone {
 	return &gitClone{}
 }
 

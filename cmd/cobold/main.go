@@ -5,11 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"github.com/Scarlet-Fairy/cobold/pkg/build"
-	"github.com/Scarlet-Fairy/cobold/pkg/build/docker"
+	dockerBuild "github.com/Scarlet-Fairy/cobold/pkg/build/docker"
 	"github.com/Scarlet-Fairy/cobold/pkg/clone"
 	"github.com/Scarlet-Fairy/cobold/pkg/clone/git"
 	"github.com/Scarlet-Fairy/cobold/pkg/log"
+	"github.com/Scarlet-Fairy/cobold/pkg/push"
+	dockerPush "github.com/Scarlet-Fairy/cobold/pkg/push/docker"
 	"github.com/Scarlet-Fairy/cobold/pkg/tracing"
+	dockerAPI "github.com/fsouza/go-dockerclient"
 	"github.com/go-kit/kit/log/level"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/xid"
@@ -18,25 +21,25 @@ import (
 )
 
 var (
-	jobID          = flag.String("build-id", xid.New().String(), "build ID that identify the actual job")
+	jobID          = flag.String("job-id", xid.New().String(), "Job's ID that identify the actual job")
 	gitRepository  = flag.String("git-repo", "https://github.com/buildkite/nodejs-docker-example", "repository to clone")
-	dockerEndpoint = flag.String("docker-endpoint", "localhost:2375", "docker daemon endpoint")
+	dockerUrl      = flag.String("docker-url", "localhost:2375", "docker daemon endpoint")
 	dockerRegistry = flag.String("docker-registry", "localhost:5000", "docker registry to push image")
-	// redisUrl      = flag.String("redis-url", "localhost", "redis url where publish complete events")
-	// redisUser     = flag.String("redis-user", "", "user used to authenticate to redis")
-	// redisPassword = flag.String("redis-password", "", "password used to authenticate to redis")
+
+// redisUrl      = flag.String("redis-url", "localhost", "redis url where publish complete events")
 )
 
 var ctx = context.Background()
 
 func main() {
 	flag.Parse()
+	imageName := fmt.Sprintf("%s/cobold/%s", *dockerRegistry, *jobID)
 
-	logger := log.InitLogger(*jobID)
+	logger, cloneLogger, buildLogger, pushLogger := log.InitLogger(*jobID)
 
 	tracer, closer, err := tracing.Init("cobold")
 	if err != nil {
-		level.Error(logger).Log("error", err.Error())
+		level.Error(logger).Log("msg", "Tracing init failed", "error", err.Error())
 		os.Exit(1)
 	}
 	defer closer.Close()
@@ -54,28 +57,46 @@ func main() {
 
 	level.Debug(logger).Log("dir", tmpDir)
 
-	cloneInstance := git.MakeClone(*jobID, logger, tracer)
+	dockerClient, err := dockerAPI.NewClient(*dockerUrl)
+	if err != nil {
+		level.Error(logger).Log("docker-endpoint", dockerUrl, "msg", "docker client cannot be created", "error", err)
+		os.Exit(1)
+	}
+	defer dockerClient.RemoveImage(imageName)
+
+	cloneInstance := git.MakeClone(*jobID, cloneLogger, tracer)
 	cloneOptions := clone.Options{
 		Url:  *gitRepository,
 		Path: tmpDir + "/",
 	}
 
-	buildInstance := docker.MakeBuild(*jobID, *dockerEndpoint, logger, tracer)
+	buildInstance := dockerBuild.MakeBuild(*jobID, dockerClient, buildLogger, tracer)
 	buildOptions := build.Options{
-		Tag:       fmt.Sprintf("cobold/%s", *jobID),
+		Name:      imageName,
 		Directory: tmpDir,
 	}
 
+	pushInstance := dockerPush.MakePush(*jobID, dockerClient, pushLogger, tracer)
+	pushOptions := push.Options{
+		Name:     imageName,
+		Tag:      "latest",
+		Registry: *dockerRegistry,
+	}
+
 	if err := cloneInstance.Clone(ctx, cloneOptions); err != nil {
-		level.Error(logger).Log("msg", err.Error())
+		level.Error(logger).Log("msg", "Clone failed", "error", err.Error())
 		os.Exit(1)
 	}
 
 	buildOutputStream, err := buildInstance.Build(ctx, buildOptions)
 	if err != nil {
-		level.Error(logger).Log("msg", err.Error())
+		level.Error(logger).Log("msg", "Build failed", "error", err.Error())
 		os.Exit(1)
 	}
+	buildLogger.Log("stream", buildOutputStream)
 
-	logger.Log("stream", buildOutputStream)
+	if err := pushInstance.Push(ctx, pushOptions); err != nil {
+		level.Error(logger).Log("msg", "Push failed", "error", err.Error())
+		os.Exit(1)
+	}
 }

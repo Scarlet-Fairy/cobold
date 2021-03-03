@@ -9,7 +9,7 @@ import (
 func MakeClone(jobID string, logger log.Logger, tracer opentracing.Tracer) clone.Clone {
 	var cloneInstance clone.Clone
 	{
-		cloneInstance = new()
+		cloneInstance = newClone()
 		cloneInstance = clone.NewTraceDecorator(jobID, tracer, cloneInstance)
 		cloneInstance = clone.NewLogDecorator(jobID, logger, cloneInstance)
 	}

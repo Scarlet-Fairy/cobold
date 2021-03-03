@@ -15,7 +15,7 @@ type Stream struct {
 	Payload string `json:"payload"`
 }
 
-func SerializeBuffer(buff io.Reader) ([]byte, error) {
+func serializeOutputStreamBuffer(buff io.Reader) ([]byte, error) {
 	streams := make([]Stream, 0)
 	rd := bufio.NewReader(buff)
 

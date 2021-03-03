@@ -1,0 +1,19 @@
+package docker
+
+import (
+	"github.com/Scarlet-Fairy/cobold/pkg/push"
+	docker "github.com/fsouza/go-dockerclient"
+	"github.com/go-kit/kit/log"
+	"github.com/opentracing/opentracing-go"
+)
+
+func MakePush(jobID string, dockerClient *docker.Client, logger log.Logger, tracer opentracing.Tracer) push.Push {
+	var dockerBuild push.Push
+	{
+		dockerBuild = newPush(dockerClient)
+		dockerBuild = push.NewTraceDecorator(jobID, tracer, dockerBuild)
+		dockerBuild = push.NewLogDecorator(jobID, logger, dockerBuild)
+	}
+
+	return dockerBuild
+}

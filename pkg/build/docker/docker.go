@@ -13,18 +13,13 @@ type dockerBuild struct {
 	client *docker.Client
 }
 
-func newBuild(endpoint string) (build.Build, error) {
-	client, err := docker.NewClient(endpoint)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create docker builder")
-	}
-
+func newBuild(client *docker.Client) build.Build {
 	return &dockerBuild{
 		client,
-	}, nil
+	}
 }
 
-func (d dockerBuild) Build(_ context.Context, options build.Options) (io.Reader, error) {
+func (d dockerBuild) Build(ctx context.Context, options build.Options) (io.Reader, error) {
 	inputStream, err := createTarball(options.Directory)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not build image")
@@ -34,7 +29,8 @@ func (d dockerBuild) Build(_ context.Context, options build.Options) (io.Reader,
 
 	buildOptions := docker.BuildImageOptions{
 		Dockerfile:   "Dockerfile",
-		Name:         options.Tag,
+		Context:      ctx,
+		Name:         options.Name,
 		InputStream:  inputStream,
 		OutputStream: outputStream,
 	}
@@ -43,5 +39,10 @@ func (d dockerBuild) Build(_ context.Context, options build.Options) (io.Reader,
 		return nil, errors.Wrap(err, "could not build image")
 	}
 
-	return outputStream, nil
+	serialized, err := serializeOutputStreamBuffer(outputStream)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not serialized buffer")
+	}
+
+	return bytes.NewBuffer(serialized), nil
 }

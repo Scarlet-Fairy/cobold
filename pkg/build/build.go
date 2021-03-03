@@ -11,5 +11,5 @@ type Build interface {
 
 type Options struct {
 	Directory string
-	Tag       string
+	Name      string
 }

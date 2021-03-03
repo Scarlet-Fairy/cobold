@@ -29,7 +29,7 @@ func (b *traceDecorator) Build(ctx context.Context, options Options) (io.Reader,
 	span.LogFields(
 		traceLog.String("jobID", b.jobID),
 		traceLog.String("directory", options.Directory),
-		traceLog.String("tag", options.Tag))
+		traceLog.String("tag", options.Name))
 
 	return b.next.Build(ctx, options)
 }
