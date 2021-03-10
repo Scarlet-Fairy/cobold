@@ -3,18 +3,18 @@ package clone
 import (
 	"context"
 	"github.com/go-kit/kit/log"
-	"github.com/opentracing/opentracing-go"
-	traceLog "github.com/opentracing/opentracing-go/log"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"time"
 )
 
 type traceDecorator struct {
 	jobID  string
-	tracer opentracing.Tracer
+	tracer trace.Tracer
 	next   Clone
 }
 
-func NewTraceDecorator(jobID string, tracer opentracing.Tracer, next Clone) Clone {
+func NewTraceDecorator(jobID string, tracer trace.Tracer, next Clone) Clone {
 	return &traceDecorator{
 		jobID:  jobID,
 		tracer: tracer,
@@ -23,12 +23,13 @@ func NewTraceDecorator(jobID string, tracer opentracing.Tracer, next Clone) Clon
 }
 
 func (t *traceDecorator) Clone(ctx context.Context, options Options) error {
-	span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, t.tracer, "clone")
-	defer span.Finish()
-	span.LogFields(
-		traceLog.String("jobId", t.jobID),
-		traceLog.String("url", options.Url),
-		traceLog.String("path", options.Path))
+	ctx, span := t.tracer.Start(ctx, "clone")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("jobId", t.jobID),
+		attribute.String("url", options.Url),
+		attribute.String("path", options.Path),
+	)
 
 	return t.next.Clone(ctx, options)
 }

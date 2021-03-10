@@ -3,19 +3,19 @@ package build
 import (
 	"context"
 	"github.com/go-kit/kit/log"
-	"github.com/opentracing/opentracing-go"
-	traceLog "github.com/opentracing/opentracing-go/log"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"io"
 	"time"
 )
 
 type traceDecorator struct {
 	jobID  string
-	tracer opentracing.Tracer
+	tracer trace.Tracer
 	next   Build
 }
 
-func NewTraceDecorator(jobID string, tracer opentracing.Tracer, next Build) Build {
+func NewTraceDecorator(jobID string, tracer trace.Tracer, next Build) Build {
 	return &traceDecorator{
 		jobID:  jobID,
 		tracer: tracer,
@@ -24,12 +24,12 @@ func NewTraceDecorator(jobID string, tracer opentracing.Tracer, next Build) Buil
 }
 
 func (b *traceDecorator) Build(ctx context.Context, options Options) (io.Reader, error) {
-	span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, b.tracer, "build")
-	defer span.Finish()
-	span.LogFields(
-		traceLog.String("jobID", b.jobID),
-		traceLog.String("directory", options.Directory),
-		traceLog.String("tag", options.Name))
+	ctx, span := b.tracer.Start(ctx, "build")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("jobID", b.jobID),
+		attribute.String("directory", options.Directory),
+		attribute.String("tag", options.Name))
 
 	return b.next.Build(ctx, options)
 }

@@ -1,5 +1,0 @@
-root = "/go/src/github.com/Scarlet-Fairy/cobold"
-
-[build]
-cmd = "make build"
-bin = "bin/cobold"

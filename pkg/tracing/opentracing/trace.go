@@ -1,4 +1,4 @@
-package tracing
+package opentracing
 
 import (
 	"github.com/opentracing/opentracing-go"
@@ -24,6 +24,8 @@ func Init(service string) (opentracing.Tracer, io.Closer, error) {
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "initializing tracing")
 	}
+
+	opentracing.SetGlobalTracer(tracer)
 
 	return tracer, closer, nil
 }

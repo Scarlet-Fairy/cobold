@@ -3,10 +3,10 @@ package git
 import (
 	"github.com/Scarlet-Fairy/cobold/pkg/clone"
 	"github.com/go-kit/kit/log"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/trace"
 )
 
-func MakeClone(jobID string, logger log.Logger, tracer opentracing.Tracer) clone.Clone {
+func MakeClone(jobID string, logger log.Logger, tracer trace.Tracer) clone.Clone {
 	var cloneInstance clone.Clone
 	{
 		cloneInstance = newClone()

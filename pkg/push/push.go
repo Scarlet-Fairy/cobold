@@ -4,6 +4,10 @@ import (
 	"context"
 )
 
+const (
+	StepName = "push"
+)
+
 type Push interface {
 	Push(ctx context.Context, options Options) error
 }

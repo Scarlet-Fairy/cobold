@@ -3,18 +3,18 @@ package push
 import (
 	"context"
 	"github.com/go-kit/kit/log"
-	"github.com/opentracing/opentracing-go"
-	traceLog "github.com/opentracing/opentracing-go/log"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"time"
 )
 
 type traceDecorator struct {
 	jobID  string
-	tracer opentracing.Tracer
+	tracer trace.Tracer
 	next   Push
 }
 
-func NewTraceDecorator(jobID string, tracer opentracing.Tracer, next Push) Push {
+func NewTraceDecorator(jobID string, tracer trace.Tracer, next Push) Push {
 	return &traceDecorator{
 		jobID:  jobID,
 		tracer: tracer,
@@ -23,12 +23,13 @@ func NewTraceDecorator(jobID string, tracer opentracing.Tracer, next Push) Push 
 }
 
 func (t *traceDecorator) Push(ctx context.Context, options Options) error {
-	span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, t.tracer, "push")
-	defer span.Finish()
-	span.LogFields(
-		traceLog.String("jobId", t.jobID),
-		traceLog.String("name", options.Name),
-		traceLog.String("tag", options.Tag))
+	ctx, span := t.tracer.Start(ctx, "push")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("jobId", t.jobID),
+		attribute.String("name", options.Name),
+		attribute.String("tag", options.Tag),
+		attribute.String("registry", options.Registry))
 
 	return t.next.Push(ctx, options)
 }

@@ -29,6 +29,7 @@ func (d *dockerPush) Push(ctx context.Context, options push.Options) error {
 		OutputStream:  ouputStream,
 		RawJSONStream: true,
 	}
+
 	if err := d.client.PushImage(pushOptions, docker.AuthConfiguration{
 		Username: "docker",
 	}); err != nil {

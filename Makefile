@@ -85,15 +85,6 @@ run: docker-run
 docker-run: docker-build
 	docker run --privileged --network host $(BINARY_NAME)
 
-watch:
-	$(eval PACKAGE_NAME=$(shell head -n 1 go.mod | cut -d ' ' -f2))
-	docker run -it --rm \
-		-w /go/src/$(PACKAGE_NAME) \
-		-v $(shell pwd):/go/src/$(PACKAGE_NAME) \
-		-p $(SERVICE_PORT):$(SERVICE_PORT) \
-		cosmtrek/air \
-		-c /go/src/$(PACKAGE_NAME)/.air.toml
-
 run-jaeger:
 	docker run \
 	  --name jaeger \
