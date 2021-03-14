@@ -18,21 +18,20 @@ import (
 	goKitLog "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/go-redis/redis/v8"
-	"github.com/rs/xid"
 	"go.opentelemetry.io/otel"
 	"io/ioutil"
 	"os"
 )
 
 var (
-	jobID          = flag.String("job-id", xid.New().String(), "Job's ID that identify the actual job")
+	jobID          = flag.String("job-id", "1", "Job's ID that identify the actual job")
 	gitRepository  = flag.String("git-repo", "https://github.com/buildkite/nodejs-docker-example", "repository to clone")
 	dockerUrl      = flag.String("docker-url", "localhost:2375", "docker daemon endpoint")
 	dockerRegistry = flag.String("docker-registry", "localhost:5000", "docker registry to push image")
 	isDev          = flag.Bool("dev", true, "run the job in dev mode")
 	tracingHost    = flag.String("tracing-host", "localhost", "host where send traces")
 	tracingPort    = flag.String("tracing-port", "6831", "port of the host where send traces")
-	redisUrl       = flag.String("redis-url", "localhost", "redis url where publish complete events")
+	redisUrl       = flag.String("redis-url", "redis://localhost:6379", "redis url where publish complete events")
 )
 
 var ctx = context.Background()
@@ -73,6 +72,7 @@ func main() {
 	//}
 	tr := otel.Tracer("cobold")
 	ctx, span := tr.Start(ctx, "job")
+	logger.Log("traceID", span.SpanContext().TraceID)
 	defer span.End()
 
 	tmpDir, err := ioutil.TempDir("", "clone-")
@@ -151,4 +151,15 @@ func handleStepError(ctx context.Context, notifyInstance notify.Notify, notifyLo
 
 		os.Exit(1)
 	}
+
+	if err := notifyInstance.NotifyCompletion(ctx, notify.Options{
+		Err:    nil,
+		Reason: step,
+		JobID:  *jobID,
+	}); err != nil {
+		level.Error(notifyLogger).Log("msg", "failed", "error", err.Error())
+
+		os.Exit(1)
+	}
+
 }

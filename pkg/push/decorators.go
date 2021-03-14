@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-kit/kit/log"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"time"
 )
@@ -22,9 +23,16 @@ func NewTraceDecorator(jobID string, tracer trace.Tracer, next Push) Push {
 	}
 }
 
-func (t *traceDecorator) Push(ctx context.Context, options Options) error {
+func (t *traceDecorator) Push(ctx context.Context, options Options) (err error) {
 	ctx, span := t.tracer.Start(ctx, "push")
-	defer span.End()
+	defer func() {
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+
+		span.End()
+	}()
+
 	span.SetAttributes(
 		attribute.String("jobId", t.jobID),
 		attribute.String("name", options.Name),

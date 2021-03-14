@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/go-kit/kit/log"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"time"
 )
 
 type traceDecorator struct {
@@ -22,9 +22,15 @@ func NewTraceDecorator(jobID string, tracer trace.Tracer, next Clone) Clone {
 	}
 }
 
-func (t *traceDecorator) Clone(ctx context.Context, options Options) error {
+func (t *traceDecorator) Clone(ctx context.Context, options Options) (err error) {
 	ctx, span := t.tracer.Start(ctx, "clone")
-	defer span.End()
+	defer func() {
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+
+		span.End()
+	}()
 	span.SetAttributes(
 		attribute.String("jobId", t.jobID),
 		attribute.String("url", options.Url),
@@ -48,13 +54,8 @@ func NewLogDecorator(jobID string, logger log.Logger, next Clone) Clone {
 	}
 }
 
-func (l logDecorator) Clone(ctx context.Context, options Options) (err error) {
-	l.logger.Log("msg", "Start clone")
-	defer func(begin time.Time) {
-		if err == nil {
-			l.logger.Log("took", time.Since(begin), "msg", "End Clone")
-		}
-	}(time.Now())
+func (l logDecorator) Clone(ctx context.Context, options Options) error {
+	l.logger.Log("msg", "Starting", "traceID", trace.SpanContextFromContext(ctx).TraceID)
 
 	return l.next.Clone(ctx, options)
 }

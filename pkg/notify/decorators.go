@@ -4,7 +4,9 @@ import (
 	"context"
 	"github.com/go-kit/kit/log"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"time"
 )
 
 type traceDecorator struct {
@@ -19,9 +21,15 @@ func NewTraceDecorator(tracer trace.Tracer, next Notify) Notify {
 	}
 }
 
-func (t *traceDecorator) NotifyCompletion(ctx context.Context, options Options) error {
+func (t *traceDecorator) NotifyCompletion(ctx context.Context, options Options) (err error) {
 	ctx, span := t.tracer.Start(ctx, "notify")
-	defer span.End()
+	defer func() {
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+
+		span.End()
+	}()
 
 	var errorAttribute attribute.KeyValue
 	{
@@ -50,8 +58,13 @@ func NewLogDecorator(logger log.Logger, next Notify) Notify {
 	}
 }
 
-func (l logDecorator) NotifyCompletion(ctx context.Context, options Options) error {
-	l.logger.Log("reason", options.Reason, "error", options.Err)
+func (l logDecorator) NotifyCompletion(ctx context.Context, options Options) (err error) {
+	l.logger.Log("msg", "Start Notify")
+	defer func(begin time.Time) {
+		if err == nil {
+			l.logger.Log("took", time.Since(begin), "msg", "End Notify")
+		}
+	}(time.Now())
 
 	return l.next.NotifyCompletion(ctx, options)
 }

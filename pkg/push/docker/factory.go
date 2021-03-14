@@ -11,8 +11,8 @@ func MakePush(jobID string, dockerClient *docker.Client, logger log.Logger, trac
 	var dockerBuild push.Push
 	{
 		dockerBuild = newPush(dockerClient)
-		dockerBuild = push.NewTraceDecorator(jobID, tracer, dockerBuild)
 		dockerBuild = push.NewLogDecorator(jobID, logger, dockerBuild)
+		dockerBuild = push.NewTraceDecorator(jobID, tracer, dockerBuild)
 	}
 
 	return dockerBuild

@@ -1,5 +1,6 @@
 FROM golang:1.15.8-alpine AS base
 
+LABEL org.opencontainers.image.source=https://github.com/Scarlet-Fairy/cobold
 MAINTAINER Michele Della Mea <michele.dellamea.arcanediver@gmail.com>
 
 # Create appuser.
@@ -44,11 +45,11 @@ RUN apk update
 RUN apk add ca-certificates git
 RUN rm -rf /var/cache/apk/*
 
-# COPY --from=base /etc/passwd /etc/passwd
-# COPY --from=base /etc/group /etc/group
+COPY --from=base /etc/passwd /etc/passwd
+COPY --from=base /etc/group /etc/group
 
 COPY --from=build /out/cobold .
 
-# USER appuser:appuser
+USER appuser:appuser
 
 ENTRYPOINT ["/cobold"]

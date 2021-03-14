@@ -1,9 +1,9 @@
 GOCMD=go
 GOTEST=$(GOCMD) test
 BINARY_NAME=cobold
-VERSION?=0.0.0
+VERSION?=0.0.1
 SERVICE_PORT?=3000
-DOCKER_REGISTRY?= #if set it should finished by /
+DOCKER_REGISTRY?=scarletfairy/#if set it should finished by /
 EXPORT_RESULT?=false # for CI please set EXPORT_RESULT to true
 BIN_FOLDER?=bin/
 MAIN_PATH?=cmd/cobold/main.go
