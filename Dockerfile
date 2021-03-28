@@ -45,11 +45,11 @@ RUN apk update
 RUN apk add ca-certificates git
 RUN rm -rf /var/cache/apk/*
 
-COPY --from=base /etc/passwd /etc/passwd
-COPY --from=base /etc/group /etc/group
+#COPY --from=base /etc/passwd /etc/passwd
+#COPY --from=base /etc/group /etc/group
 
 COPY --from=build /out/cobold .
 
-USER appuser:appuser
+#USER appuser:appuser
 
 ENTRYPOINT ["/cobold"]

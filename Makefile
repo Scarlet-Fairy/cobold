@@ -83,7 +83,7 @@ docker-release:
 run: docker-run
 
 docker-run: docker-build
-	docker run --privileged --network host $(BINARY_NAME)
+	docker run -v /var/run/docker.sock:/var/run/docker.sock  --network host $(BINARY_NAME)
 
 run-jaeger:
 	docker run \

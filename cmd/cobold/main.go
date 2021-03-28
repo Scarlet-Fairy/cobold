@@ -26,7 +26,7 @@ import (
 var (
 	jobID          = flag.String("job-id", "1", "Job's ID that identify the actual job")
 	gitRepository  = flag.String("git-repo", "https://github.com/buildkite/nodejs-docker-example", "repository to clone")
-	dockerUrl      = flag.String("docker-url", "localhost:2375", "docker daemon endpoint")
+	dockerUrl      = flag.String("docker-url", "unix:///var/run/docker.sock", "docker daemon endpoint")
 	dockerRegistry = flag.String("docker-registry", "localhost:5000", "docker registry to push image")
 	isDev          = flag.Bool("dev", true, "run the job in dev mode")
 	tracingHost    = flag.String("tracing-host", "localhost", "host where send traces")

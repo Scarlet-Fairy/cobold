@@ -6,7 +6,8 @@ import (
 )
 
 type message struct {
-	Error error `json:"error"`
+	Topic string `json:"topic"`
+	Error string `json:"error"`
 }
 
 func encodeMessageToJson(payload message) (string, error) {

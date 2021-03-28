@@ -19,14 +19,18 @@ func newNotify(client *redis.Client) notify.Notify {
 }
 
 func (r *redisNotify) NotifyCompletion(ctx context.Context, options notify.Options) error {
-	msg, err := encodeMessageToJson(message{
-		Error: options.Err,
-	})
+	msg := message{
+		Topic: options.Reason,
+	}
+	if options.Err != nil {
+		msg.Error = options.Err.Error()
+	}
+	encodedMsg, err := encodeMessageToJson(msg)
 	if err != nil {
 		return err
 	}
 
-	if cmd := r.client.Publish(ctx, pubChannel(options.JobID, options.Reason), msg); cmd.Err() != nil {
+	if cmd := r.client.Publish(ctx, pubChannel(options.JobID), encodedMsg); cmd.Err() != nil {
 		return errors.Wrap(cmd.Err(), "could not notify clone completed")
 	}
 
