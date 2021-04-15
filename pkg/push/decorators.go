@@ -3,6 +3,7 @@ package push
 import (
 	"context"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/metrics"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -65,4 +66,25 @@ func (l logDecorator) Push(ctx context.Context, options Options) (err error) {
 	}(time.Now())
 
 	return l.next.Push(ctx, options)
+}
+
+type metricDecorator struct {
+	jobID string
+	histogram metrics.Histogram
+	next Push
+}
+
+func NewMetricDecorator(jobID string, histogram metrics.Histogram, next Push) Push {
+	return &metricDecorator{
+		jobID:     jobID,
+		histogram: histogram,
+		next:      next,
+	}
+}
+func (m metricDecorator) Push(ctx context.Context, options Options) error {
+	defer func(begin time.Time) {
+		m.histogram.With("jobID", m.jobID).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return m.next.Push(ctx, options)
 }

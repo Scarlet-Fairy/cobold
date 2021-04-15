@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/metrics"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -67,4 +68,23 @@ func (l logDecorator) NotifyCompletion(ctx context.Context, options Options) (er
 	}(time.Now())
 
 	return l.next.NotifyCompletion(ctx, options)
+}
+
+type metricDecorator struct {
+	histogram metrics.Histogram
+	next Notify
+}
+
+func NewMetricDecorator(histogram metrics.Histogram, next Notify) Notify {
+	return &metricDecorator{
+		histogram: histogram,
+		next:      next,
+	}
+}
+func (m metricDecorator) NotifyCompletion(ctx context.Context, options Options) error {
+	defer func(begin time.Time) {
+		m.histogram.With("jobID", options.JobID).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return m.next.NotifyCompletion(ctx, options)
 }

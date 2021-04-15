@@ -3,9 +3,11 @@ package clone
 import (
 	"context"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/metrics"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"time"
 )
 
 type traceDecorator struct {
@@ -58,4 +60,25 @@ func (l logDecorator) Clone(ctx context.Context, options Options) error {
 	l.logger.Log("msg", "Starting", "traceID", trace.SpanContextFromContext(ctx).TraceID)
 
 	return l.next.Clone(ctx, options)
+}
+
+type metricDecorator struct {
+	jobID string
+	histogram metrics.Histogram
+	next Clone
+}
+
+func NewMetricDecorator(jobID string, histogram metrics.Histogram, next Clone) Clone {
+	return &metricDecorator{
+		jobID:     jobID,
+		histogram: histogram,
+		next:      next,
+	}
+}
+func (m metricDecorator) Clone(ctx context.Context, options Options) error {
+	defer func(begin time.Time) {
+		m.histogram.With("jobID", m.jobID).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return m.next.Clone(ctx, options)
 }

@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/metrics"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -65,4 +66,25 @@ func (l logDecorator) Build(ctx context.Context, options Options) (reader io.Rea
 	}(time.Now())
 
 	return l.next.Build(ctx, options)
+}
+
+type metricDecorator struct {
+	jobID string
+	histogram metrics.Histogram
+	next Build
+}
+
+func NewMetricDecorator(jobID string, histogram metrics.Histogram, next Build) Build {
+	return &metricDecorator{
+		jobID:     jobID,
+		histogram: histogram,
+		next:      next,
+	}
+}
+func (m metricDecorator) Build(ctx context.Context, options Options) (io.Reader, error) {
+	defer func(begin time.Time) {
+		m.histogram.With("jobID", m.jobID).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return m.next.Build(ctx, options)
 }

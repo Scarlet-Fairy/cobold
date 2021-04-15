@@ -12,6 +12,7 @@ require (
 	github.com/go-redis/redis/v8 v8.7.1
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.3.0
 	github.com/rs/xid v1.2.1 // indirect
 	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
