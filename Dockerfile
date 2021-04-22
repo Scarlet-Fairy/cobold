@@ -1,7 +1,6 @@
 FROM golang:1.15.8-alpine AS base
 
 LABEL org.opencontainers.image.source=https://github.com/Scarlet-Fairy/cobold
-MAINTAINER Michele Della Mea <michele.dellamea.arcanediver@gmail.com>
 
 # Create appuser.
 ARG USER=appuser
@@ -21,8 +20,8 @@ WORKDIR /src
 # ENV CGO_ENABLED=0 \
 #     GO111MODULE=on
 
-# COPY go.* ./
-# RUN go mod download
+COPY go.* ./
+RUN go mod download
 COPY . .
 
 # ---------------------- #
