@@ -32,12 +32,11 @@ var (
 	gitRepository  = flag.String("git-repo", "https://github.com/buildkite/nodejs-docker-example", "repository to clone")
 	dockerUrl      = flag.String("docker-url", "unix:///var/run/docker.sock", "docker daemon endpoint")
 	dockerRegistry = flag.String("docker-registry", "localhost:5000", "docker registry to push image")
-	isDev          = flag.Bool("dev", true, "run the job in dev mode")
 	tracingHost    = flag.String("tracing-host", "localhost", "host where send traces")
 	tracingPort    = flag.String("tracing-port", "6831", "port of the host where send traces")
 	redisUrl       = flag.String("redis-url", "redis://localhost:6379", "redis url where publish complete events")
 	pushGatewayUrl = flag.String("pushgateway-url", "http://localhost:9091", "pushgateway url where metrics are shipped")
-	)
+)
 
 var ctx = context.Background()
 
@@ -47,7 +46,7 @@ func main() {
 
 	logger, cloneLogger, buildLogger, pushLogger, notifyLogger := log.InitLogger(*jobID)
 
-	flush, err := otelTracing.InitTraceProvide(*isDev, "cobold", *jobID, *tracingHost, *tracingPort)
+	flush, err := otelTracing.InitTraceProvide(false, "cobold", *jobID, *tracingHost, *tracingPort)
 	if err != nil {
 		level.Error(logger).Log("msg", "Tracing init failed", "error", err.Error())
 		os.Exit(1)
@@ -77,12 +76,10 @@ func main() {
 		notifyDuration = prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: "scarlet_fairy",
 			Subsystem: "cobold",
-			Name: "notify_duration",
-			Help: "",
+			Name:      "notify_duration",
+			Help:      "",
 		}, []string{"jobID"})
 	}
-
-
 
 	tr := otel.Tracer("cobold")
 	ctx, span := tr.Start(ctx, "job")
@@ -108,6 +105,7 @@ func main() {
 	redisClient, err := newRedisClient(*redisUrl)
 	if err != nil {
 		level.Error(logger).Log("redis-endpoint", *redisUrl, "msg", "redis client cannot be created", "error", err)
+		os.Exit(1)
 	}
 
 	cloneInstance := git.MakeClone(*jobID, cloneDuration, cloneLogger, tr)
@@ -150,7 +148,12 @@ func newRedisClient(url string) (*redis.Client, error) {
 		return nil, err
 	}
 
-	return redis.NewClient(options), nil
+	client := redis.NewClient(options)
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 func handleStepError(
