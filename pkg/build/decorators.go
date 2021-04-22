@@ -38,7 +38,8 @@ func (b *traceDecorator) Build(ctx context.Context, options Options) (reader io.
 	span.SetAttributes(
 		attribute.String("jobID", b.jobID),
 		attribute.String("directory", options.Directory),
-		attribute.String("name", options.Name))
+		attribute.String("name", options.Name),
+	)
 
 	return b.next.Build(ctx, options)
 }
@@ -58,11 +59,14 @@ func NewLogDecorator(jobID string, logger log.Logger, next Build) Build {
 }
 
 func (l logDecorator) Build(ctx context.Context, options Options) (reader io.Reader, err error) {
-	l.logger.Log("msg", "Start build")
 	defer func(begin time.Time) {
-		if err == nil {
-			l.logger.Log("took", time.Since(begin), "msg", "End build")
-		}
+		l.logger.Log(
+			"options.Name", options.Name,
+			"options.Directory", options.Directory,
+			"err", err,
+			"msg", "Build completed",
+			"took", time.Since(begin),
+		)
 	}(time.Now())
 
 	return l.next.Build(ctx, options)

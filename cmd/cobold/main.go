@@ -139,7 +139,9 @@ func main() {
 	err = pushInstance.Push(ctx, pushOptions)
 	handleStepError(ctx, notifyInstance, notifyLogger, cloneLogger, err, push.StepName)
 
-	_ = pushgateway.New(*pushGatewayUrl, "cobold").Gatherer(stdprometheus.DefaultGatherer).Push()
+	if err = pushgateway.New(*pushGatewayUrl, "cobold").Gatherer(stdprometheus.DefaultGatherer).Push(); err != nil {
+		level.Error(logger).Log("pushgateway-url", *pushGatewayUrl, "err", err)
+	}
 }
 
 func newRedisClient(url string) (*redis.Client, error) {

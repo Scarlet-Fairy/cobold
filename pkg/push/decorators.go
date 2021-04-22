@@ -38,7 +38,8 @@ func (t *traceDecorator) Push(ctx context.Context, options Options) (err error) 
 		attribute.String("jobId", t.jobID),
 		attribute.String("name", options.Name),
 		attribute.String("tag", options.Tag),
-		attribute.String("registry", options.Registry))
+		attribute.String("registry", options.Registry),
+	)
 
 	return t.next.Push(ctx, options)
 }
@@ -58,10 +59,16 @@ func NewLogDecorator(jobID string, logger log.Logger, next Push) Push {
 }
 
 func (l logDecorator) Push(ctx context.Context, options Options) (err error) {
-	l.logger.Log("msg", "Start Push")
 	defer func(begin time.Time) {
 		if err == nil {
-			l.logger.Log("took", time.Since(begin), "msg", "End Push")
+			l.logger.Log(
+				"options.Name", options.Name,
+				"options.Tag", options.Tag,
+				"options.Registry", options.Registry,
+				"err", err,
+				"msg", "Push completed",
+				"took", time.Since(begin),
+			)
 		}
 	}(time.Now())
 

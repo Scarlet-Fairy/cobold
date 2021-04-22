@@ -56,9 +56,17 @@ func NewLogDecorator(jobID string, logger log.Logger, next Clone) Clone {
 	}
 }
 
-func (l logDecorator) Clone(ctx context.Context, options Options) error {
-	l.logger.Log("msg", "Starting", "traceID", trace.SpanContextFromContext(ctx).TraceID)
+func (l logDecorator) Clone(ctx context.Context, options Options) (err error) {
 
+	defer func(start time.Time) {
+		l.logger.Log(
+			"options.Url", options.Url,
+			"options.Path", options.Path,
+			"err", err,
+			"msg", "Clone completed",
+			"took", time.Since(start),
+		)
+	}(time.Now())
 	return l.next.Clone(ctx, options)
 }
 

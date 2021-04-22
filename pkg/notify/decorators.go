@@ -60,10 +60,16 @@ func NewLogDecorator(logger log.Logger, next Notify) Notify {
 }
 
 func (l logDecorator) NotifyCompletion(ctx context.Context, options Options) (err error) {
-	l.logger.Log("msg", "Start Notify")
 	defer func(begin time.Time) {
 		if err == nil {
-			l.logger.Log("took", time.Since(begin), "msg", "End Notify")
+			l.logger.Log(
+				"took", time.Since(begin),
+				"options.err", options.Err,
+				"options.JobId", options.JobID,
+				"options.Reason", options.Reason,
+				"err", err,
+				"msg", "Notification completed",
+			)
 		}
 	}(time.Now())
 
