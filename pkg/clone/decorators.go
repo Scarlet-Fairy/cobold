@@ -63,9 +63,9 @@ func (l logDecorator) Clone(ctx context.Context, options Options) error {
 }
 
 type metricDecorator struct {
-	jobID string
+	jobID     string
 	histogram metrics.Histogram
-	next Clone
+	next      Clone
 }
 
 func NewMetricDecorator(jobID string, histogram metrics.Histogram, next Clone) Clone {

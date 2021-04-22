@@ -69,9 +69,9 @@ func (l logDecorator) Push(ctx context.Context, options Options) (err error) {
 }
 
 type metricDecorator struct {
-	jobID string
+	jobID     string
 	histogram metrics.Histogram
-	next Push
+	next      Push
 }
 
 func NewMetricDecorator(jobID string, histogram metrics.Histogram, next Push) Push {

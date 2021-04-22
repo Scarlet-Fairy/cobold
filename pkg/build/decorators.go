@@ -69,9 +69,9 @@ func (l logDecorator) Build(ctx context.Context, options Options) (reader io.Rea
 }
 
 type metricDecorator struct {
-	jobID string
+	jobID     string
 	histogram metrics.Histogram
-	next Build
+	next      Build
 }
 
 func NewMetricDecorator(jobID string, histogram metrics.Histogram, next Build) Build {

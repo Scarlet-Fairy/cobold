@@ -72,7 +72,7 @@ func (l logDecorator) NotifyCompletion(ctx context.Context, options Options) (er
 
 type metricDecorator struct {
 	histogram metrics.Histogram
-	next Notify
+	next      Notify
 }
 
 func NewMetricDecorator(histogram metrics.Histogram, next Notify) Notify {
