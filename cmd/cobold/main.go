@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 var (
@@ -45,6 +46,10 @@ func main() {
 	imageName := fmt.Sprintf("%s/cobold/%s", *dockerRegistry, *jobID)
 
 	logger, cloneLogger, buildLogger, pushLogger, notifyLogger := log.InitLogger(*jobID)
+
+	if _, ok := os.LookupEnv("DEV"); ok {
+		time.Sleep(time.Hour * 10)
+	}
 
 	flush, err := otelTracing.InitTraceProvide(false, "cobold", *jobID, *tracingHost, *tracingPort)
 	if err != nil {

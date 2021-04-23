@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/Scarlet-Fairy/cobold/pkg/push"
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/pkg/errors"
 )
 
 type dockerPush struct {
@@ -19,21 +18,21 @@ func newPush(dockerClient *docker.Client) push.Push {
 }
 
 func (d *dockerPush) Push(ctx context.Context, options push.Options) error {
-	ouputStream := bytes.NewBuffer(nil)
+	outputStream := bytes.NewBuffer(nil)
 
 	pushOptions := docker.PushImageOptions{
 		Registry:      options.Registry,
 		Name:          options.Name,
 		Tag:           options.Tag,
 		Context:       ctx,
-		OutputStream:  ouputStream,
-		RawJSONStream: true,
+		OutputStream:  outputStream,
+		RawJSONStream: false,
 	}
 
 	if err := d.client.PushImage(pushOptions, docker.AuthConfiguration{
 		Username: "docker",
 	}); err != nil {
-		return errors.Wrap(err, "could not push image")
+		return err
 	}
 
 	return nil

@@ -64,7 +64,7 @@ func (l logDecorator) NotifyCompletion(ctx context.Context, options Options) (er
 		if err == nil {
 			l.logger.Log(
 				"took", time.Since(begin),
-				"options.err", options.Err,
+				"options.Err", options.Err,
 				"options.JobId", options.JobID,
 				"options.Reason", options.Reason,
 				"err", err,

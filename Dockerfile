@@ -32,7 +32,7 @@ ENV TARGETOS=linux
 ENV TARGETARCH=amd64
 
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -mod vendor \
+    go build \
     -o /out/cobold \
     ./cmd/cobold/main.go
 
