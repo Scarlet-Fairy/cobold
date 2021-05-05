@@ -15,6 +15,7 @@ require (
 	github.com/prometheus/client_golang v1.3.0
 	github.com/rs/xid v1.2.1 // indirect
 	github.com/sirupsen/logrus v1.8.0 // indirect
+	github.com/streadway/amqp v1.0.0
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
 	github.com/uber/jaeger-lib v2.4.0+incompatible // indirect
 	go.opentelemetry.io/otel v0.18.0

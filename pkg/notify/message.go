@@ -1,20 +1,20 @@
-package redis
+package notify
 
 import (
 	"encoding/json"
 	"github.com/pkg/errors"
 )
 
-type message struct {
+type Message struct {
 	Topic string `json:"topic"`
 	Error string `json:"error"`
 }
 
-func encodeMessageToJson(payload message) (string, error) {
+func EncodeMessageToJson(payload Message) ([]byte, error) {
 	serialized, err := json.Marshal(payload)
 	if err != nil {
-		return "", errors.Wrap(err, "could not serialized publish message to json")
+		return nil, errors.Wrap(err, "could not serialized publish message to json")
 	}
 
-	return string(serialized), nil
+	return serialized, nil
 }

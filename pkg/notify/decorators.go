@@ -22,6 +22,19 @@ func NewTraceDecorator(tracer trace.Tracer, next Notify) Notify {
 	}
 }
 
+func (t *traceDecorator) Init(ctx context.Context) (err error) {
+	ctx, span := t.tracer.Start(ctx, "notify")
+	defer func() {
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+
+		span.End()
+	}()
+
+	return t.next.Init(ctx)
+}
+
 func (t *traceDecorator) NotifyCompletion(ctx context.Context, options Options) (err error) {
 	ctx, span := t.tracer.Start(ctx, "notify")
 	defer func() {
@@ -59,6 +72,20 @@ func NewLogDecorator(logger log.Logger, next Notify) Notify {
 	}
 }
 
+func (l logDecorator) Init(ctx context.Context) (err error) {
+	defer func(begin time.Time) {
+		if err == nil {
+			l.logger.Log(
+				"took", time.Since(begin),
+				"err", err,
+				"msg", "Init completed",
+			)
+		}
+	}(time.Now())
+
+	return l.next.Init(ctx)
+}
+
 func (l logDecorator) NotifyCompletion(ctx context.Context, options Options) (err error) {
 	defer func(begin time.Time) {
 		if err == nil {
@@ -87,6 +114,11 @@ func NewMetricDecorator(histogram metrics.Histogram, next Notify) Notify {
 		next:      next,
 	}
 }
+
+func (m metricDecorator) Init(ctx context.Context) error {
+	return m.next.Init(ctx)
+}
+
 func (m metricDecorator) NotifyCompletion(ctx context.Context, options Options) error {
 	defer func(begin time.Time) {
 		m.histogram.With("jobID", options.JobID).Observe(time.Since(begin).Seconds())

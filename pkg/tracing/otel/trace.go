@@ -7,7 +7,7 @@ import (
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func InitTraceProvide(isDev bool, serviceName string, jobID, endpointHost, endpointPort string) (func(), error) {
+func InitTraceProvider(isDev bool, serviceName string, jobID, endpointHost, endpointPort string) (func(), error) {
 	var endpoint jaeger.EndpointOption
 	if isDev {
 		endpoint = jaeger.WithAgentEndpoint(fmt.Sprintf("%s:%s", endpointHost, endpointPort))

@@ -15,17 +15,21 @@ func newNotify(client *redis.Client) notify.Notify {
 	return &redisNotify{
 		client: client,
 	}
+}
 
+func (r *redisNotify) Init(_ context.Context) error {
+	return nil
 }
 
 func (r *redisNotify) NotifyCompletion(ctx context.Context, options notify.Options) error {
-	msg := message{
+	msg := notify.Message{
 		Topic: options.Reason,
 	}
 	if options.Err != nil {
 		msg.Error = options.Err.Error()
 	}
-	encodedMsg, err := encodeMessageToJson(msg)
+
+	encodedMsg, err := notify.EncodeMessageToJson(msg)
 	if err != nil {
 		return err
 	}

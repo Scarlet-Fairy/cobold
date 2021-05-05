@@ -10,7 +10,7 @@ import (
 	"github.com/Scarlet-Fairy/cobold/pkg/clone/git"
 	"github.com/Scarlet-Fairy/cobold/pkg/log"
 	"github.com/Scarlet-Fairy/cobold/pkg/notify"
-	redisNotify "github.com/Scarlet-Fairy/cobold/pkg/notify/redis"
+	amqpNotify "github.com/Scarlet-Fairy/cobold/pkg/notify/amqp"
 	"github.com/Scarlet-Fairy/cobold/pkg/push"
 	dockerPush "github.com/Scarlet-Fairy/cobold/pkg/push/docker"
 	otelTracing "github.com/Scarlet-Fairy/cobold/pkg/tracing/otel"
@@ -19,9 +19,9 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/prometheus"
-	"github.com/go-redis/redis/v8"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	pushgateway "github.com/prometheus/client_golang/prometheus/push"
+	"github.com/streadway/amqp"
 	"go.opentelemetry.io/otel"
 	"io/ioutil"
 	"os"
@@ -35,7 +35,7 @@ var (
 	dockerRegistry = flag.String("docker-registry", "localhost:5000", "docker registry to push image")
 	tracingHost    = flag.String("tracing-host", "localhost", "host where send traces")
 	tracingPort    = flag.String("tracing-port", "6831", "port of the host where send traces")
-	redisUrl       = flag.String("redis-url", "redis://localhost:6379", "redis url where publish complete events")
+	rabbitMQUrl    = flag.String("rabbitmq-url", "amqp://localhost:5672", "rabbitmq url where publish complete message")
 	pushGatewayUrl = flag.String("pushgateway-url", "http://localhost:9091", "pushgateway url where metrics are shipped")
 )
 
@@ -51,7 +51,7 @@ func main() {
 		time.Sleep(time.Hour * 10)
 	}
 
-	flush, err := otelTracing.InitTraceProvide(false, "cobold", *jobID, *tracingHost, *tracingPort)
+	flush, err := otelTracing.InitTraceProvider(false, "cobold", *jobID, *tracingHost, *tracingPort)
 	if err != nil {
 		level.Error(logger).Log("msg", "Tracing init failed", "error", err.Error())
 		os.Exit(1)
@@ -107,11 +107,22 @@ func main() {
 	}
 	defer dockerClient.RemoveImage(imageName) // debug
 
-	redisClient, err := newRedisClient(*redisUrl)
+	rabbitMQClient, err := newRabbitMQClient(*rabbitMQUrl)
 	if err != nil {
-		level.Error(logger).Log("redis-endpoint", *redisUrl, "msg", "redis client cannot be created", "error", err)
+		level.Error(logger).Log("rabbitmq-endpoint", *rabbitMQUrl, "msg", "rabbitmq client cannot be created", "error", err)
 		os.Exit(1)
 	}
+
+	rabbitMQChannel, err := rabbitMQClient.Channel()
+	if err != nil {
+		level.Error(logger).Log("rabbitmq-endpoint", *rabbitMQUrl, "msg", "rabbitmq channel cannot be created", "error", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if err := rabbitMQChannel.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	cloneInstance := git.MakeClone(*jobID, cloneDuration, cloneLogger, tr)
 	cloneOptions := clone.Options{
@@ -132,7 +143,11 @@ func main() {
 		Registry: *dockerRegistry,
 	}
 
-	notifyInstance := redisNotify.MakeNotify(redisClient, notifyDuration, notifyLogger, tr)
+	notifyInstance := amqpNotify.MakeNotify(rabbitMQChannel, *jobID, notifyDuration, notifyLogger, tr)
+
+	if err := notifyInstance.Init(ctx); err != nil {
+		os.Exit(1)
+	}
 
 	err = cloneInstance.Clone(ctx, cloneOptions)
 	handleStepError(ctx, notifyInstance, notifyLogger, cloneLogger, err, clone.StepName)
@@ -149,18 +164,13 @@ func main() {
 	}
 }
 
-func newRedisClient(url string) (*redis.Client, error) {
-	options, err := redis.ParseURL(url)
+func newRabbitMQClient(uri string) (*amqp.Connection, error) {
+	conn, err := amqp.Dial(uri)
 	if err != nil {
 		return nil, err
 	}
 
-	client := redis.NewClient(options)
-	if err := client.Ping(ctx).Err(); err != nil {
-		return nil, err
-	}
-
-	return client, nil
+	return conn, nil
 }
 
 func handleStepError(
