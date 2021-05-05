@@ -70,7 +70,7 @@ build: vendor
 	@mkdir -p bin
 	@$(GOCMD) build -mod vendor -o $(BIN_FOLDER)$(BINARY_NAME) $(MAIN_PATH)
 
-docker-build: vendor
+docker-build:
 	docker build --rm --tag $(BINARY_NAME) .
 
 docker-release:
@@ -85,27 +85,12 @@ run: docker-run
 docker-run: docker-build
 	docker run -v /var/run/docker.sock:/var/run/docker.sock  --network host $(BINARY_NAME)
 
-run-jaeger:
-	docker run \
-	  --name jaeger \
-	  --rm \
-      -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 \
-      -p 5775:5775/udp \
-      -p 6831:6831/udp \
-      -p 6832:6832/udp \
-      -p 5778:5778 \
-      -p 16686:16686 \
-      -p 14268:14268 \
-      -p 14250:14250 \
-      -p 9411:9411 \
-      jaegertracing/all-in-one:1.21
+compose-up:
+	docker-compose -f deployments/docker-compose.yml up
 
-run-registry:
-	docker run \
-	-p 5000:5000 \
-	--name registry \
-	--rm \
-	registry:2
+compose-down:
+	docker-compose -f deployments/docker-compose.yml down
+
 
 help:
 	@echo ''
@@ -124,6 +109,6 @@ help:
 	@echo "  ${YELLOW}test            ${RESET} ${GREEN}Run the tests of the project${RESET}"
 	@echo "  ${YELLOW}vendor          ${RESET} ${GREEN}Copy of all packages needed to support builds and tests in the vendor directory${RESET}"
 	@echo "  ${YELLOW}watch           ${RESET} ${GREEN}Run the code with cosmtrek/air to have automatic reload on changes${RESET}"
-	@echo "  ${YELLOW}run-jaeger      ${RESET} ${GREEN}Run Jaeger to store traces${RESET}"
-	@echo "  ${YELLOW}run-registry	  ${RESET} ${GREEN}Run a docker container registry on port 5000${RESET}"
+	@echo "  ${YELLOW}compose-up      ${RESET} ${GREEN}Run Docker compose up${RESET}"
+	@echo "  ${YELLOW}compose-down    ${RESET} ${GREEN}Run Docker compose down${RESET}"
 
