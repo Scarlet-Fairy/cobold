@@ -26,7 +26,7 @@ func (r *rabbitNotify) Init(_ context.Context) error {
 	if err := r.channel.ExchangeDeclare(
 		Exchanger,
 		"direct",
-		false,
+		true,
 		false,
 		false,
 		false,

@@ -35,7 +35,7 @@ var (
 	dockerRegistry = flag.String("docker-registry", "localhost:5000", "docker registry to push image")
 	tracingHost    = flag.String("tracing-host", "localhost", "host where send traces")
 	tracingPort    = flag.String("tracing-port", "6831", "port of the host where send traces")
-	rabbitMQUrl    = flag.String("rabbitmq-url", "amqp://localhost:5672", "rabbitmq url where publish complete message")
+	rabbitMQUrl    = flag.String("rabbitmq-url", "amqp://guest:guest@localhost:5672/", "rabbitmq url where publish complete message")
 	pushGatewayUrl = flag.String("pushgateway-url", "http://localhost:9091", "pushgateway url where metrics are shipped")
 )
 
@@ -146,6 +146,7 @@ func main() {
 	notifyInstance := amqpNotify.MakeNotify(rabbitMQChannel, *jobID, notifyDuration, notifyLogger, tr)
 
 	if err := notifyInstance.Init(ctx); err != nil {
+		level.Error(logger).Log("msg", "Notify Init failed", "err", err)
 		os.Exit(1)
 	}
 
