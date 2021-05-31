@@ -42,12 +42,3 @@ services:
     container_name: pushgateway
     ports:
       - 9091:9091
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    ports:
-      - 3000:3000
